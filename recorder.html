@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="tachyons.css">
+    <style>
+        .recorder {
+            opacity: 0.7;;
+        }
+        button{
+            outline: none;
+            cursor: pointer;
+            z-index: 2;
+        }
+        .background {
+            border-radius: 50%;
+            filter: blur(7.6px);
+            opacity: 0.7;
+        }
+        .background:hover {
+            opacity: 1;
+        }
+        .toggle-btn:hover +  .background{
+            opacity: 1;
+        }
+        canvas {
+            width: 100% !important;
+        }
+    </style>
+</head>
+<body>
+    <script src="redom.min.js"></script>
+    <script src="recorder.js"></script>
+</body>
+</html>
