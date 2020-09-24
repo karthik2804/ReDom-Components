@@ -227,7 +227,7 @@ class Recorder {
         }
         setChildren(this.button, [this.icon])
     }
-    resize() {
+    onmount() {
         let buttonDim = this.button.getBoundingClientRect()
         setStyle(this.buttonBackground, {height:buttonDim.height + 20+ "px", width:buttonDim.width + 20 + "px" })
     }
@@ -262,7 +262,6 @@ class App {
 
 let app = new App
 mount(document.body, app)
-app.resize()
 
 setStyle(document.body, {margin: 0, padding: 0, width:"100%", height: "100%", "box-sizing": "border-box", "overflow-x": "hidden"})
 setStyle(document.documentElement, {margin: 0, padding: 0, width:"100%", height: "100%","box-sizing": "border-box"})
