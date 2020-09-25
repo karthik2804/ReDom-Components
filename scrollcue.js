@@ -1,77 +1,5 @@
 const { el, mount, text, list, setChildren, setStyle, setAttr } = redom
 
-let isCueSliding = false
-
-const jumper = (handle) => {
-    let container = handle
-    let element
-    let start           
-    let easing
-    let a11y
-    let distance
-    let duration
-    let timeStart
-    let timeElapsed
-    let next
-    let callback
-  
-    function loop (timeCurrent) {
-      if (!timeStart) {
-        timeStart = timeCurrent
-      }
-      timeElapsed = timeCurrent - timeStart
-  
-      next = easing(timeElapsed, start, distance, duration)
-      container.scrollTo(0,next)  
-      timeElapsed < duration
-        ? window.requestAnimationFrame(loop)     
-        : done()                                   
-    }
-  
-    // scroll finished helper
-  
-    function done () {
-      // account for rAF time rounding inaccuracies
-      container.scrollTo(0, start + distance)
-      // if scrolling to an element, and accessibility is enabled
-      if (element && a11y) {
-        // add tabindex indicating programmatic focus
-        element.setAttribute('tabindex', '-1')
-        // focus the element
-        element.focus()
-      }
-      // if it exists, fire the callback
-      if (typeof callback === 'function') {
-        callback()
-      }
-      // reset time for next jump
-      timeStart = false
-      isCueSliding = false
-    }
-    
-    function jump (scrollPath, options = {}) {
-      if (isCueSliding) {
-        return
-      }
-      isCueSliding = true
-      duration = options.duration || 1000
-      callback = options.callback
-      easing = options.easing || easeInOutQuad
-      a11y = options.a11y || false
-      start = scrollPath[0]
-      a11y = false           
-      distance = scrollPath[1]
-      window.requestAnimationFrame(loop)
-    }
-    return jump
-  }
-  const easeInOutQuad = (t, b, c, d) => {
-    t /= d / 2
-    if (t < 1) return c / 2 * t * t + b
-    t--
-    return -c / 2 * (t * (t - 2) - 1) + b
-  }
-
 class ScrollCue {
     constructor(autoplayPeriod = null) {
         this.autoplayPeriod = autoplayPeriod
@@ -80,7 +8,6 @@ class ScrollCue {
         this.length = 0
         this.container = el("div.container.h-100.relative", {style:"overflow-y:scroll;"})
         this.el = el("div.w-100.h-100", this.container)
-        this.jump = jumper(this.container)
     }
     onmount() {
         setChildren(this.container, this.items)
@@ -109,7 +36,6 @@ class ScrollCue {
       this.changeIndex(this.index - 1)
     }
     changeIndex(num) {
-      if(isCueSliding) {return}
         if(num === this.index) {
             return
         }
@@ -125,7 +51,12 @@ class ScrollCue {
         }
         let destinationDistance = this.items[this.index].offsetTop - this.items[oldIndex].offsetTop
         console.log()
-        this.jump([this.items[oldIndex].offsetTop - (this.el.getBoundingClientRect().height/2 - this.items[0].getBoundingClientRect().height/2 - parseInt(window.getComputedStyle(this.items[0]).marginTop)), destinationDistance])
+        this.container.scroll({
+          left:0,
+          top:this.items[this.index].offsetTop - (this.el.getBoundingClientRect().height/2 - this.items[this.index].getBoundingClientRect().height/2),
+          behavior: 'smooth'
+          })
+        console.log(this.items[this.index].offsetTop)
         this.items[oldIndex].classList.remove("activeCue")
         this.items[this.index].classList.add("activeCue")
     }
@@ -137,7 +68,7 @@ class App {
         this.subtitle = el("h2.pa5.cue", "trial")
         this.content = el("p.pa5.cue", "This is a ReDom Component")
         this.content1 = el("p.pa5.cue", "This is a ReDom test")
-        this.ScrollCue = new ScrollCue(10000)
+        this.ScrollCue = new ScrollCue(3000)
         this.ScrollCue.addMultipleItems([this.heading, this.subtitle, this.content, this.content1])
         this.el = el("div.w-100.h-100", this.ScrollCue)
     }
