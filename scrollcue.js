@@ -5,9 +5,10 @@ Integer id rutrum massa. Nullam id elit consequat, luctus magna vel, consectetur
 Quisque eu porta mauris, in venenatis magna. Sed nec bibendum est. Vestibulum ligula turpis, euismod eleifend rutrum quis, aliquet et mauris. Phasellus vulputate consectetur ligula, non congue ipsum congue et. In ligula nunc, pellentesque non purus et, egestas ornare mi. Vivamus pharetra lorem ex, at dignissim dolor congue et. In aliquet mi a urna aliquet, eget interdum diam efficitur. Morbi nulla lacus, venenatis quis risus at, laoreet auctor arcu. Sed sodales ultricies maximus. Proin auctor vitae ipsum a efficitur.`
 
 class ScrollCue {
-    constructor(content, autoplayPeriod = null) {
+    constructor(content, autoplayPeriod = 1000) {
       this.content = content
       this.autoplayPeriod = autoplayPeriod
+      this.autoplaying = false
       this.items = []
       this.lineIndex = 0
       this.wordIndex = 0
@@ -15,10 +16,51 @@ class ScrollCue {
       this.wordLineIndex = []
       this.length = 0
       this.container = el("div.container.w-100.h-100.relative.flex.items-center.flex-column.", {style:"overflow-y:scroll;"})
-      this.el = el("div.w-100.h-100", this.container)
+
+      // Scroll Cue Settings
+      this.scrollSpeedInput = el("input", {value: this.autoplayPeriod} )
+      this.scrollSpeed = el("div.pa2", el("span", "AutoPlay Period (ms)"), this.scrollSpeedInput)
+      this.contentArea = el("textarea.w-100.h-50", {value: testData, onkeyup: function(e) {
+        e.stopPropagation()
+      }})
+      this.contenInput = el("div.w-100.h-100.flex.items-center.justify-center.flex-column.pa2", el("span", "Content of the ScrollCue"), this.contentArea)
+      this.saveChanges = el("button.w-50.bn.bg-green", {onclick: function(e) {
+        setStyle(this.settings, {display:"none"})
+        this.content = this.contentArea.value
+        this.autoplayPeriod = this.scrollSpeedInput.value
+        this.update()
+      }.bind(this)}, "Save")
+      this.cancelChanges = el("button.w-50.bn", {onclick: function(e) {
+        console.log("here")
+        setStyle(this.settings, {display:"none"})
+      }.bind(this)}, "Cancel")
+      this.settingsActions = el("div.w-100", this.cancelChanges, this.saveChanges)
+      this.settings = el("div.w-100.h-100.bg-white.fixed.top-0.z-5.flex.items-center.pa2.flex-column", {style:"display:none;"}, this.scrollSpeed, this.contenInput, this.settingsActions)
+      this.el = el("div.w-100.h-100", {ondblclick:function(e) {
+        if(this.autoplaying) {
+          this.autoPlayToggle()
+        }
+        this.container.scroll({
+          left:0,
+          top:0,
+          behavior: 'smooth'
+          })
+        setStyle(this.settings, {display:""})
+        this.contentArea.value = this.content
+        this.scrollSpeedInput.value = this.autoplayPeriod
+      }.bind(this)}, this.settings, this.container)
       this.charactersPerLine
       this.usableScreen =  false
       this.autoplay
+    }
+    update() {
+      this.lineIndex = 0
+      this.wordIndex = 0
+      this.oldWord = null
+      this.wordLineIndex = []
+      this.formatContent()
+      setChildren(this.container, this.items)
+      this.items[this.lineIndex].classList.add("activeCue")
     }
     seperateParagraphs(data) {
       data = data.split("\n")
@@ -81,11 +123,8 @@ class ScrollCue {
       let maxCharPerLine = this.container.getBoundingClientRect().width /getTextWidth("W", "bold " + fontSizes[usableFonts[0]] + "pt arial")
       this.charactersPerLine = (maxCharPerLine > 24 ? 24 : parseInt(maxCharPerLine))
     }
-    onmount() {
-      this.setFontSize()
-      if(!this.usableScreen) {
-        return
-      }
+    formatContent() {
+      this.items = []
       this.paragraphs = this.seperateParagraphs(this.content)
       this.lines = this.paragraphs.map(function(paragraph) {
         return this.createLines(paragraph)
@@ -100,16 +139,30 @@ class ScrollCue {
       temp = null
       let test = this.createItems(this.lines)
       this.addMultipleItems(test)
+    }
+    onmount() {
+      this.setFontSize()
+      if(!this.usableScreen) {
+        return
+      }
+      this.formatContent()
       setChildren(this.container, this.items)
       setStyle(this.container, {"padding-top": this.el.getBoundingClientRect().height/2 - this.items[0].getBoundingClientRect().height/2 - parseInt(window.getComputedStyle(this.items[0]).marginTop) + "px"})
       setStyle(this.container, {"padding-bottom": this.el.getBoundingClientRect().height/2 - this.items[this.items.length - 1].getBoundingClientRect().height/2 - parseInt(window.getComputedStyle(this.items[this.length - 1]).marginTop) + "px"})
       this.items[this.lineIndex].classList.add("activeCue")
-      if (this.autoplayPeriod) {
+    }
+  autoPlayToggle() {
+    if (!this.autoplaying) {
         this.autoplay = setInterval(function() {
           this.incWord()
         }.bind(this), this.autoplayPeriod)
-      }
+      this.autoplaying = true
     }
+    else {
+      clearInterval(this.autoplay)
+      this.autoplaying = false
+    }
+  }
     updateWordHighlight(oldWord, newWord) {
       newWord.classList.add("activeCueWord")
       if(oldWord) {
@@ -196,7 +249,7 @@ class ScrollCue {
 
 class App {
     constructor() {
-        this.ScrollCue = new ScrollCue(testData, 600)
+        this.ScrollCue = new ScrollCue(testData, 1000)
         this.el = el("div.w-100.h-100", this.ScrollCue)
     }
 }
@@ -210,7 +263,6 @@ document.body.addEventListener("keyup", function(e){
       app.ScrollCue.decIndex()
       break
     case "ArrowDown":
-    case " ":
       app.ScrollCue.incIndex()
       break
     case "ArrowRight":
@@ -219,9 +271,10 @@ document.body.addEventListener("keyup", function(e){
     case "ArrowLeft":
       app.ScrollCue.decWord()
       break
-    case "A":
-    case "a":
-      clearInterval(app.ScrollCue.autoplay)
+    case " ":
+      console.log("here")
+      e.preventDefault()
+      app.ScrollCue.autoPlayToggle()
       break
   }
 })
