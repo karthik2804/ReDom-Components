@@ -33,7 +33,7 @@ class DndList {
         this.startY
         this.rect
         this.items = list("div", DndItem, null, this.onChlidEvent.bind(this))
-        this.el = el("div.w-50.tc", this.items)
+        this.el = el("div.w-50.tc", {style:"overflow:scroll"}, this.items)
         this.itemHeight
         this.lastIndex = null
         this.content
@@ -54,12 +54,15 @@ class DndList {
                 for (let i = 0; i < this.itemsLength; i++) {
                     setStyle(this.items.views[i], {transition:"all 0.3s linear"})
                 }
+                console.log(this.items.views[0])
+                this.itemHeight = this.items.views[0].el.getBoundingClientRect().height
+                console.log(this.itemHeight)
                 this.rect = this.el.getBoundingClientRect()
-                this.itemHeight = this.rect.height / this.itemsLength
+                this.rect.height = this.itemHeight * this.itemsLength
                 this.lastIndex = this.itemDragging
                 break
             case "dragMove":
-                let positionIndex = Math.round(((data + this.startY) - this.rect.y)/this.itemHeight)
+                let positionIndex = Math.round(((data + this.startY) + this.el.scrollTop - this.rect.y)/this.itemHeight)
                 positionIndex = (positionIndex >= 0 ? positionIndex : 0)
                 if(this.lastIndex == positionIndex) {return}
                 for (let i = 0; i < this.itemsLength; i++) {
@@ -102,8 +105,8 @@ class DndList {
 class App {
     constructor() {
         this.dndList = new DndList()
-        this.el = el("div.w-100.h-100.flex.justify-center.items-center", this.dndList)
-        this.dndList.update([1,2,3,4])
+        this.el = el("div.w-100.h-50.flex", this.dndList)
+        this.dndList.update([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15])
     }
 }
 
