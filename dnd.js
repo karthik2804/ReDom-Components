@@ -5,6 +5,8 @@ class DndItem {
         this.parentNotify = parentNotify
         this.index = null
         this.el = el("div.item.h3.flex.items-center.justify-center", {draggable:true, style:"border:1px solid red", ondragstart: function(e){
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", null);
             this.parentNotify("dragStart", this.index, e.clientY)
             e.stopPropagation()
         }.bind(this),
