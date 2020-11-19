@@ -2,13 +2,13 @@ const { el, mount, text, list, setChildren, setStyle, setAttr } = redom
 
 class CropperToolBar {
     constructor(notifyParent) {
-        this.openImage = el("button.bn.bg-blue.white.pa2", {onclick: function(e){
+        this.openImage = el("button.bn.bg-blue.white.pa.h-100.mr2", {onclick: function(e){
             notifyParent("openImage")
         }}, "Open")
-        this.mode = el("button.bn.bg-blue.white.pa2", {onclick: function(e){
+        this.mode = el("button.bn.bg-blue.white.pa2.h-100.mr2", {onclick: function(e){
             notifyParent("toggleMode")
         }}, "Edit")
-        this.cropImage = el("button.bn.h-100.pa2", {onclick: function(e){
+        this.cropImage = el("button.bn.h-100.pa2.mr2", {onclick: function(e){
             notifyParent("crop")
         }}, "Crop")
         this.download = el("button.bn.h-100.pa2.bg-green", {onclick: function(e) {
@@ -20,7 +20,7 @@ class CropperToolBar {
         this.zoomOut = el("button.bn.w3.h-100.pa2.mr2", {onclick: function(e){
             notifyParent("zoom", 0)
         }}, "-")
-        this.el = el("div.w-100.h3.flex.justify-between", this.openImage, this.mode, el("div",this.zoomOut, this.zoomIn), el("div", this.cropImage, this.download))
+        this.el = el("div.w-100.h3.flex.justify-around",el("div", this.openImage, this.mode, this.zoomOut, this.zoomIn, this.cropImage, this.download))
     }
     update(mode) {
         if (mode) {
@@ -55,7 +55,7 @@ class Cropper {
         this.image = el("img")
         this.overlay = new CropperOverlay()
         this.overlayContainer = el("div.absolute", el("div.relative.w-100.h-100", this.overlay))
-        this.el = el("div.h-100.w-100.relative.", this.toolbar, this.overlayContainer, this.image)
+        this.el = el("div.h-100.w-100.relative.", this.toolbar, el("div.tc.w-100", el("h3.gray", "Open image to crop")))
         let startMoving = function(e) {
             this.startX = (e.clientX || e.pageX || e.touches && e.touches[0].clientX)
             this.startY = (e.clientY || e.pageY || e.touches && e.touches[0].clientY)
@@ -119,6 +119,7 @@ class Cropper {
     }
     loadImage(url) {
         this.srcUrl = url
+        this.editedURL = null
         this.image.src = url
         this.image.onload = function() {
             let height = this.image.height
@@ -128,6 +129,7 @@ class Cropper {
             setStyle(this.overlayContainer, {top: this.image.offsetTop + 'px', left: this.image.offsetLeft + 'px',
                 height: height + 'px', width: width + 'px' })
         }.bind(this)
+        setChildren(this.el, [this.toolbar, this.overlayContainer, this.image])
     }
     crop() {
         let img = new Image()
@@ -161,6 +163,9 @@ class Cropper {
                 this.crop()
                 break
             case "toggleMode":
+                if(!this.editedURL) {
+                    return
+                }
                 this.mode = !this.mode
                 this.update()
                 this.toolbar.update(this.mode)
@@ -180,7 +185,7 @@ class Cropper {
                     }.bind(this)
                     reader.readAsDataURL(input.files[0]); 
                 }.bind(this)
-                let file = el("input", {type:"file", accept:".jpg, .jpeg", onchange: function(e){
+                let file = el("input", {type:"file", accept:".jpg, .jpeg, .png, .gif", onchange: function(e){
                     readImage(e)
                 }})
                 file.click()
