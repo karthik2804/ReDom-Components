@@ -14,21 +14,15 @@ class CropperToolBar {
         this.download = el("button.bn.h-100.pa2.bg-green", {onclick: function(e) {
             notifyParent("downloadImage")
         }}, "Download")
-        this.zoomIn = el("button.bn.w3.h-100.pa2.mr2", {onclick: function(e){
-            notifyParent("zoom", 1)
-        }}, "+")
-        this.zoomOut = el("button.bn.w3.h-100.pa2.mr2", {onclick: function(e){
-            notifyParent("zoom", 0)
-        }}, "-")
-        this.el = el("div.w-100.h3.flex.justify-around",el("div", this.openImage, this.mode, this.zoomOut, this.zoomIn, this.cropImage, this.download))
+        this.el = el("div.w-100.h3.flex.justify-around",el("div", this.openImage, this.mode, this.cropImage, this.download))
     }
     update(mode) {
         if (mode) {
-            setChildren(this.el, [this.openImage, this.mode, this.download])
             this.mode.textContent = "Preview"
+            setAttr(this.cropImage, {disabled:true})
         }
         else {
-            setChildren(this,el, [this.openImage, this.mode, el("div",this.zoomOut, this.zoomIn), el("div", this.cropImage, this.download)])
+            setAttr(this.cropImage, {disabled:false})
             this.mode.textContent = "Edit"    
         }
     }
@@ -36,12 +30,15 @@ class CropperToolBar {
 
 class CropperOverlay {
     constructor() {
-        this.el = el("div.absolute", {style:"border:3px solid red;height:75px;width:100px;"})
+        this.resizeDiv = el("div.absolute", {style:"height:20px;width:20px;background:red;"})
+        this.el = el("div.absolute", {style:"border:3px solid red;height:75px;width:100px;"}, el("div.relative.w-100.h-100", this.resizeDiv))
+        setStyle(this.resizeDiv, {bottom:"-10px", right:"-10px"})
     }
 }
 
 class Cropper {
     constructor() {
+        this.newImage = true
         this.srcUrl
         this.editedURL 
         this.mode = 0 // 0 - edit mode; 1 - preview mode
@@ -63,43 +60,73 @@ class Cropper {
             this.currentY = parseInt(this.overlay.el.style.top, 10 ) || 0
             this.leftOffset = this.overlayContainer.offsetLeft
             this.topOffset = this.overlayContainer.offsetTop
-            this.overlayContainer.addEventListener("touchend", stopMoving, true)
-            this.overlayContainer.addEventListener("mouseup", stopMoving, true)
-            this.overlayContainer.addEventListener("mousemove", moving, true)
-            this.overlayContainer.addEventListener("touchmove", moving, true)
+            this.overlayContainer.addEventListener("touchend", stopMoving, false)
+            this.overlayContainer.addEventListener("mouseup", stopMoving, false)
+            this.overlayContainer.addEventListener("mouseleave", stopMoving, false)
+            this.overlayContainer.addEventListener("mousemove", moving, false)
+            this.overlayContainer.addEventListener("touchmove", moving, false)
         }.bind(this)
         let moving = function(e) {
             e.preventDefault()
             let tempX = this.currentX + ((e.clientX || e.pageX || e.touches && e.touches[0].clientX) - this.startX)
             let tempY = this.currentY + ((e.clientY || e.pageY || e.touches && e.touches[0].clientY) - this.startY)
-            setStyle(this.overlay.el, {top: (tempY < 0 || (tempY + this.overlayHeight) > this.containerHeight ? this.overlay.el.style.top : tempY + 'px'),
-                left: (tempX < 0 || (tempX + this.overlayWidth) > this.containerWidth ? this.overlay.el.style.left : tempX + 'px')})
+            setStyle(this.overlay.el, {top: (tempY < 0 ? "0px" : (tempY + this.overlayHeight > this.containerHeight ? (this.containerHeight - this.overlayHeight) + 'px' : tempY + 'px')),
+                left: (tempX < 0 ? "0px" : (tempX + this.overlayWidth > this.containerWidth ? (this.containerWidth - this.overlayWidth) + 'px' : tempX + 'px'))})
         }.bind(this)
         let stopMoving = function(e) {
             this.currentX = parseInt(this.overlay.el.style.left, 10 ) || 0
             this.currentY = parseInt(this.overlay.el.style.top, 10 ) || 0
-            this.overlayContainer.removeEventListener("touchend", stopMoving, true)
-            this.overlayContainer.removeEventListener("mouseup", stopMoving, true)
-            this.overlayContainer.removeEventListener("mousemove", moving, true)
-            this.overlayContainer.removeEventListener("touchmove", moving, true)
+            this.overlayContainer.removeEventListener("touchend", stopMoving, false)
+            this.overlayContainer.removeEventListener("mouseup", stopMoving, false)
+            this.overlayContainer.removeEventListener("mouseleave", stopMoving, false)
+            this.overlayContainer.removeEventListener("mousemove", moving, false)
+            this.overlayContainer.removeEventListener("touchmove", moving, false)
         }.bind(this)
         let resize = function(e) {
             e.preventDefault()
             this.onchildEvent("zoom", e.deltaY > 0)
         }.bind(this)
-        this.overlay.el.addEventListener("mousedown", startMoving, true)
-        this.overlay.el.addEventListener("touchstart", startMoving, true)
-        this.overlay.el.addEventListener("wheel", resize, true)
+        let startResize = function(e) {
+            e.preventDefault()
+            e.stopPropagation()
+            this.startX = (e.clientX || e.pageX || e.touches && e.touches[0].clientX)
+            this.startY = (e.clientY || e.pageY || e.touches && e.touches[0].clientY)
+            this.overlayContainer.addEventListener("touchend", stopResizing, false)
+            this.overlayContainer.addEventListener("mouseleave", stopResizing, false)
+            this.overlayContainer.addEventListener("mouseup", stopResizing, false)
+            this.overlayContainer.addEventListener("mousemove", resizeMoving, false)
+            this.overlayContainer.addEventListener("touchmove", resizeMoving, false)
+        }.bind(this)
+        let resizeMoving = function(e) {
+            let tempWidth = this.overlayWidth + (e.clientX || e.pageX || e.touches && e.touches[0].clientX) - this.startX
+            let tempHeight = tempWidth * 0.75
+            if (tempHeight + this.currentY <= this.containerHeight) {
+            setStyle(this.overlay.el, {width: (tempWidth < 100 ? '100px' : (tempWidth + this.currentX > this.containerWidth ? (this.containerWidth - this.currentX) + 'px' : tempWidth + 'px' ))})
+            setStyle(this.overlay.el, {height: parseInt(this.overlay.el.style.width, 10) * 0.75 + 'px'})
+            }
+        }.bind(this)
+        let stopResizing = function(e) {
+            this.overlayWidth = parseInt(this.overlay.el.style.width, 10)
+            this.overlayHeight = this.overlayWidth * 0.75
+            this.overlayContainer.removeEventListener("touchend", stopResizing, false)
+            this.overlayContainer.removeEventListener("mouseup", stopResizing, false)
+            this.overlayContainer.removeEventListener("mousemove", resizeMoving, false)
+            this.overlayContainer.removeEventListener("touchmove", resizeMoving, false)
+        }.bind(this)
+        this.overlay.el.addEventListener("mousedown", startMoving, false)
+        this.overlay.el.addEventListener("touchstart", startMoving, false)
+        this.overlay.resizeDiv.addEventListener("mousedown", startResize, false)
+        this.overlay.resizeDiv.addEventListener("touchstart", startResize, false)
+        this.overlay.el.addEventListener("wheel", resize, false)
     }
     update() {
-
         let startTouch = function(e) {
+            e.preventDefault()
             this.image.src = this.srcUrl
         }.bind(this)
         let stopTouch = function(e) {
             this.image.src = this.editedURL
         }.bind(this)
-        console.log("here")
         if(this.mode) {
             setChildren(this.el, [ this.toolbar, this.image,])
             this.image.src = this.editedURL
@@ -121,15 +148,27 @@ class Cropper {
         this.srcUrl = url
         this.editedURL = null
         this.image.src = url
+        this.newImage = true
         this.image.onload = function() {
-            let height = this.image.height
-            let width = this.image.width
-            this.containerWidth = width
-            this.containerHeight = height
-            setStyle(this.overlayContainer, {top: this.image.offsetTop + 'px', left: this.image.offsetLeft + 'px',
-                height: height + 'px', width: width + 'px' })
+                if(this.newImage) {
+                let height = this.image.height
+                let width = this.image.width
+                this.containerWidth = width
+                this.containerHeight = height
+                setStyle(this.overlayContainer, {top: this.image.offsetTop + 'px', left: this.image.offsetLeft + 'px',
+                    height: height + 'px', width: width + 'px' })
+                this.overlayWidth = this.containerWidth * 0.8
+                this.overlayHeight = this.overlayWidth * 0.75
+                setStyle(this.overlay.el, {width: this.overlayWidth + 'px', height: this.overlayHeight + 'px', 
+                    left: (this.containerWidth - this.overlayWidth)/2 + 'px', top: (this.containerHeight - this.overlayHeight)/2 + 'px'})
+                this.currentX = parseInt(this.overlay.el.style.left , 10)
+                this.currentY = parseInt(this.overlay.el.style.top , 10)
+                this.newImage = false
+            }
         }.bind(this)
         setChildren(this.el, [this.toolbar, this.overlayContainer, this.image])
+        this.mode = 0
+        this.toolbar.update(this.mode)
     }
     crop() {
         let img = new Image()
@@ -147,18 +186,6 @@ class Cropper {
     }
     onchildEvent(event, data) {
         switch(event) {
-            case "zoom":
-                console.log(data)
-                let tempWidth = (data > 0 ? this.overlayWidth + 10 : this.overlayWidth -10)
-                let tempHeight = (data > 0 ? this.overlayHeight + 7.5: this.overlayHeight - 7.5)
-                if(tempHeight > 75 && tempWidth > 100) {
-                if ((tempHeight + this.currentY) <= this.containerHeight && (tempWidth + this.currentX) <= this.containerWidth) {
-                    this.overlayWidth = tempWidth
-                    this.overlayHeight = tempHeight
-                    setStyle(this.overlay.el, {width: this.overlayWidth + 'px', height: this.overlayHeight + 'px'})
-                }
-            }
-                break
             case "crop":
                 this.crop()
                 break
@@ -185,7 +212,7 @@ class Cropper {
                     }.bind(this)
                     reader.readAsDataURL(input.files[0]); 
                 }.bind(this)
-                let file = el("input", {type:"file", accept:".jpg, .jpeg, .png, .gif", onchange: function(e){
+                let file = el("input", {type:"file", accept:".jpg, .jpeg, .png", onchange: function(e){
                     readImage(e)
                 }})
                 file.click()
