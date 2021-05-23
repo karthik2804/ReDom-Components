@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MD2pages</title>
+    <link rel="stylesheet" href="spectre.min.css">
+    <style>
+        body, html {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        .w-100 {
+            width: 100%;
+        }
+        .h-100 {
+            height: 100%;
+        }
+        .ha-2 {
+            height: 2rem;
+        }
+        .shadow {
+            box-shadow: 0px 0px 4px 2px rgba( 0, 0, 0, 0.2 );
+        }
+        .shadow-1 {
+            box-shadow: -3px 0px 10px 2px rgba( 0, 0, 0, 0.2 );
+        }
+        .shadow-2 {
+            box-shadow: 3px 0px 10px 2px rgba( 0, 0, 0, 0.2 );
+        }
+        .flex-column{
+            flex-direction: column;
+        }
+        .full-col {
+            padding: 0;
+        }
+        .hide {
+            display: none;
+        }
+        .ew-resize {cursor: ew-resize;}
+    </style>
+</head>
+<body>
+    <script src="redom.min.js"></script>
+    <script src="marked.js"></script>
+    <script>
+        const { el, mount, text, list, setChildren, setStyle, setAttr, svg } = redom
+    </script>
+    <script src="utilities.js"></script>
+    <script src="imageCropper.js"></script>
+    <script src="renderer.js"></script>
+    <script src="editor.js"></script>
+    <script src="preview.js"></script>
+    <script src="index.js"></script>
+</body>
+</html>
